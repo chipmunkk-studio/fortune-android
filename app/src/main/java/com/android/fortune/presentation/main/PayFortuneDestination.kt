@@ -1,17 +1,20 @@
 package com.android.fortune.presentation.main
 
 import android.annotation.SuppressLint
-import android.graphics.drawable.Drawable
+import android.content.Context
+import android.hardware.Sensor
+import android.hardware.SensorEvent
+import android.hardware.SensorEventListener
+import android.hardware.SensorManager
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Box
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.lifecycle.Lifecycle
@@ -44,8 +47,17 @@ fun PayFortuneDestination(
     val viewState by viewModel.viewState.collectAsStateWithLifecycle()
     val mapView = remember { PayFortuneMapView(context) }
     val lifecycle = LocalLifecycleOwner.current.lifecycle
-    var startAnimation by remember { mutableStateOf<Drawable?>(null) }
-    var startPosition by remember { mutableStateOf(Offset(0f, 0f)) }
+    val sensorManager = context.getSystemService(Context.SENSOR_SERVICE) as SensorManager
+    val rotationSensor = sensorManager.getDefaultSensor(Sensor.TYPE_ORIENTATION)
+    val rotationListener = object : SensorEventListener {
+        override fun onSensorChanged(event: SensorEvent) {
+            viewModel.updateCompass(event.values[0])
+        }
+
+        override fun onAccuracyChanged(sensor: Sensor, accuracy: Int) {
+            // 정확도 변경 시 처리
+        }
+    }
 
     // 마커 획득 후 결과를 반환.
     val startObtainActivityForResult = rememberLauncherForActivityResult(
@@ -63,12 +75,24 @@ fun PayFortuneDestination(
     DisposableEffect(lifecycle) {
         val lifecycleObserver = LifecycleEventObserver { _, event ->
             when (event) {
-                Lifecycle.Event.ON_PAUSE -> Timber.tag("FortuneTest").d("onPause")
-                Lifecycle.Event.ON_RESUME -> {
-
+                Lifecycle.Event.ON_PAUSE -> {
+                    // 센서 매니저 등록 해제.
+                    sensorManager.unregisterListener(rotationListener)
                 }
 
-                Lifecycle.Event.ON_STOP -> Timber.tag("FortuneTest").d("onStop")
+                Lifecycle.Event.ON_RESUME -> {
+                    // 센서 매니저 등록.
+                    sensorManager.registerListener(
+                        rotationListener,
+                        rotationSensor,
+                        SensorManager.SENSOR_DELAY_UI
+                    )
+                }
+
+                Lifecycle.Event.ON_STOP -> {
+                    Timber.tag("FortuneTest").d("onStop")
+                }
+
                 else -> Unit
             }
         }
@@ -77,6 +101,7 @@ fun PayFortuneDestination(
 
         onDispose {
             lifecycle.removeObserver(lifecycleObserver)
+            sensorManager.unregisterListener(rotationListener)
         }
     }
 
@@ -131,6 +156,7 @@ fun PayFortuneDestination(
         PayFortuneMainMap(
             context = context,
             mapView = mapView,
+            headings = viewState.headings,
             markers = viewState.markers,
             currentLocation = viewState.myLocation,
             onMarkerClick = {

@@ -120,4 +120,12 @@ class PayFortuneMainViewModel : ViewModel() {
         _singleEvent.trySend(PayFortuneSingleEvent.ObtainMarkerAction(marker))
     }
 
+    fun updateCompass(azimuth: Float) {
+        _viewState.update { prevState ->
+            prevState.copy(
+                headings = azimuth
+            )
+        }
+    }
+
 }

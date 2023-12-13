@@ -10,6 +10,7 @@ data class PayFortuneMainViewState(
     val myLocation: GeoPoint?,
     val obtainingMarker: PayFortuneMarker?,
     val isObtaining: Boolean,
+    val headings: Float,
 ) {
     companion object {
         fun initial() = PayFortuneMainViewState(
@@ -17,6 +18,7 @@ data class PayFortuneMainViewState(
             myLocation = null,
             obtainingMarker = null,
             isObtaining = false,
+            headings = 0F,
         )
     }
 }

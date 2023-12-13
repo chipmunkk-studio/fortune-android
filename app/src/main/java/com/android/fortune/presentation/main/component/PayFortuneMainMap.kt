@@ -1,5 +1,6 @@
 package com.android.fortune.presentation.main.component
 
+import PayFortuneDirectionPainter
 import android.annotation.SuppressLint
 import android.content.Context
 import android.graphics.Bitmap
@@ -36,6 +37,7 @@ import timber.log.Timber
 fun PayFortuneMainMap(
     context: Context,
     mapView: PayFortuneMapView,
+    headings: Float,
     markers: ImmutableList<PayFortuneMarker>,
     currentLocation: GeoPoint?,
     onMarkerClick: (PayFortuneMarker) -> Unit,
@@ -62,9 +64,11 @@ fun PayFortuneMainMap(
                 mapView
             },
         )
+        PayFortuneDirectionPainter(headings = headings)
         FortuneMainRippleBackground(
             modifier = Modifier.align(Alignment.Center)
         )
+
     }
 }
 
