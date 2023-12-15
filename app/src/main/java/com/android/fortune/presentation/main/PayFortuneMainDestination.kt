@@ -9,18 +9,18 @@ import android.hardware.SensorManager
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Box
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.navigation.NavController
 import com.android.fortune.LaunchSingleEvent
 import com.android.fortune.PayFortuneExt
 import com.android.fortune.PayFortuneExt.deltaThresholdBase
@@ -28,24 +28,23 @@ import com.android.fortune.PayFortuneExt.initialZoomLevel
 import com.android.fortune.PayFortuneExt.mapMoveAnimationSpeed
 import com.android.fortune.domain.PayFortuneMarker
 import com.android.fortune.presentation.main.component.PayFortuneMainMap
-import com.android.fortune.presentation.main.component.PayFortuneMarkerObtaining
 import com.android.fortune.presentation.obtain.PayFortuneMarkerObtainActivity
 import com.android.fortune.presentation.obtain.PayFortuneMarkerObtainActivity.Companion.CODE_RESULT_OBTAIN_SUCCESS
 import com.android.fortune.presentation.obtain.PayFortuneMarkerObtainActivity.Companion.KEY_RESULT_OBTAIN_SUCCESS
 import com.android.fortune.presentation.obtain.PayFortuneMarkerObtainArgs
 import org.osmdroid.util.BoundingBox
+import org.osmdroid.views.MapView
 import org.osmdroid.views.overlay.Marker
 import timber.log.Timber
 
 @SuppressLint("ClickableViewAccessibility")
 @Composable
-fun PayFortuneDestination(
+fun PayFortuneMainDestination(
     viewModel: PayFortuneMainViewModel,
-    navController: NavController,
 ) {
     val context = LocalContext.current
     val viewState by viewModel.viewState.collectAsStateWithLifecycle()
-    val mapView = remember { PayFortuneMapView(context) }
+    val mapView = remember { MapView(context) }
     val lifecycle = LocalLifecycleOwner.current.lifecycle
     val sensorManager = context.getSystemService(Context.SENSOR_SERVICE) as SensorManager
     val rotationSensor = sensorManager.getDefaultSensor(Sensor.TYPE_ORIENTATION)
@@ -152,6 +151,29 @@ fun PayFortuneDestination(
             }
         }
     }
+
+
+    if (viewState.isShowRequestObtainDialog) {
+        AlertDialog(
+            onDismissRequest = {
+
+            },
+            text = { Text("마커를 획득하시겠습니까?") },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        val targetMarker = viewState.currentObtainMarker
+                        targetMarker?.let {
+                            viewModel.startObtainProcess(targetMarker)
+                        }
+                    }
+                ) {
+                    Text("확인")
+                }
+            },
+        )
+    }
+
     Box {
         PayFortuneMainMap(
             context = context,
@@ -162,12 +184,6 @@ fun PayFortuneDestination(
             onMarkerClick = {
                 viewModel.onMarkerClick(it)
             }
-        )
-
-        PayFortuneMarkerObtaining(
-            visible = viewState.isObtaining,
-            imageUrl = viewState.obtainingMarker?.imageUrl,
-            name = viewState.obtainingMarker?.name,
         )
     }
 

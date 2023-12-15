@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<navigation xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/nav_fortune_obtain"
+    app:startDestination="@id/payFortuneRequireEmptyFragment">
+    <fragment
+        android:id="@+id/payFortuneTermsFragment"
+        android:name="com.android.fortune.presentation.require.terms.PayFortuneTermsFragment"
+        android:label="PayFortuneTermsFragment">
+        <action
+            android:id="@+id/action_payFortuneTermsFragment_to_payFortuneLocationFragment"
+            app:destination="@id/payFortuneLocationFragment" />
+    </fragment>
+
+    <fragment
+        android:id="@+id/payFortuneLocationFragment"
+        android:name="com.android.fortune.presentation.require.location.PayFortuneLocationFragment"
+        android:label="PayFortuneLocationFragment" />
+    <fragment
+        android:id="@+id/payFortuneRequireStartMainFragment"
+        android:name="com.android.fortune.presentation.require.PayFortuneRequireStartMainFragment"
+        android:label="PayFortuneRequireStartMainFragment" />
+    <fragment
+        android:id="@+id/payFortuneRequireEmptyFragment"
+        android:name="com.android.fortune.presentation.require.PayFortuneRequireEmptyFragment"
+        android:label="PayFortuneRequireEmptyFragment" />
+
+</navigation>

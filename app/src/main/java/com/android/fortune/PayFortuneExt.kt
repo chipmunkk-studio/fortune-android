@@ -1,6 +1,9 @@
 package com.android.fortune
 
+import android.Manifest
 import android.animation.ValueAnimator
+import android.content.Context
+import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.drawable.BitmapDrawable
@@ -13,34 +16,38 @@ import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLifecycleOwner
+import androidx.core.content.ContextCompat
 import androidx.core.graphics.drawable.toBitmap
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.flowWithLifecycle
 import com.android.fortune.presentation.main.component.PayFortuneCircleOverlay
+import com.android.fortune.presentation.require.location.PayFortuneLocationFragment
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.mapNotNull
 import org.osmdroid.util.GeoPoint
 import org.osmdroid.views.MapView
 import org.osmdroid.views.overlay.Marker
 import timber.log.Timber
+import kotlin.math.cos
+import kotlin.math.sin
 
 object PayFortuneExt {
-    const val initialZoomLevel = 18.0
+    const val initialZoomLevel = 19.0
     const val deltaThreshold = 600
     const val deltaThresholdBase = 111000.0
     const val mapMoveAnimationSpeed = 500L
-    const val minZoomLevel = 17.0
-    const val maxZoomLevel = 18.0
+    const val minZoomLevel = 18.0
+    const val maxZoomLevel = 19.0
 }
 
 
 fun getRandomLocation(currentLocation: GeoPoint): GeoPoint {
     // 10미터 랜덤 이동 계산
     val randomAngle = Math.random() * 2 * Math.PI
-    val deltaLatitude = 100 * Math.sin(randomAngle) / 111320
+    val deltaLatitude = 100 * sin(randomAngle) / 111320
     val deltaLongitude =
-        100 * Math.cos(randomAngle) / (111320 * Math.cos(Math.toRadians(currentLocation.latitude)))
+        100 * cos(randomAngle) / (111320 * cos(Math.toRadians(currentLocation.latitude)))
 
     return GeoPoint(
         currentLocation.latitude + deltaLatitude,
@@ -118,4 +125,13 @@ fun getScreenPositionFromMarker(marker: Marker, mapView: MapView): Offset {
 fun Drawable.asImageBitmap(): ImageBitmap {
     val context = LocalContext.current
     return this.toBitmap().asImageBitmap()
+}
+
+fun Context.checkPermissionGranted(): Boolean {
+    val permissions = PayFortuneLocationFragment.requirePermission
+    val allPermissionsGranted = permissions.all { permission ->
+        val granted = ContextCompat.checkSelfPermission(this, permission) == PackageManager.PERMISSION_GRANTED
+        granted
+    }
+    return allPermissionsGranted
 }

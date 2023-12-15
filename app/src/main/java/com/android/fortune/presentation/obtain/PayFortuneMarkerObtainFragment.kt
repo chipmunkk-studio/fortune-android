@@ -16,6 +16,7 @@ import com.android.fortune.theme.AndroidFortuneTheme
 class PayFortuneMarkerObtainFragment() : Fragment() {
 
     private val viewModel = PayFortuneMarkerObtainViewModel()
+    private lateinit var args: PayFortuneMarkerObtainArgs
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -24,9 +25,6 @@ class PayFortuneMarkerObtainFragment() : Fragment() {
     ): View? {
         return inflater.inflate(R.layout.fragment_fortune_marker_obtain, container, false).apply {
             findViewById<ComposeView>(R.id.compose_view).apply {
-                val intent = (requireActivity() as PayFortuneMarkerObtainActivity).intent
-                val args = intent.getParcelableExtra(ARGS_FORTUNE_OPTAIN)
-                    ?: PayFortuneMarkerObtainArgs.initial()
                 setContent {
                     AndroidFortuneTheme {
                         PayFortuneMarkerObtainDestination(
@@ -39,7 +37,13 @@ class PayFortuneMarkerObtainFragment() : Fragment() {
         }
     }
 
-    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
-        super.onViewCreated(view, savedInstanceState)
+    companion object {
+        fun newInstance(
+            args: PayFortuneMarkerObtainArgs
+        ): PayFortuneMarkerObtainFragment {
+            return PayFortuneMarkerObtainFragment().apply {
+                this.args = args
+            }
+        }
     }
 }

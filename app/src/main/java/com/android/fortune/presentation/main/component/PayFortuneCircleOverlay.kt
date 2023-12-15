@@ -9,7 +9,7 @@ import org.osmdroid.util.GeoPoint
 
 class PayFortuneCircleOverlay(
     val center: GeoPoint,
-    val radiusInMeters: Double
+    val radiusInMeters: Float
 ) : Overlay() {
     private val paint: Paint = Paint().apply {
         style = Paint.Style.FILL
@@ -20,7 +20,7 @@ class PayFortuneCircleOverlay(
     override fun draw(canvas: Canvas, mapView: MapView, shadow: Boolean) {
         if (!shadow) {
             val projectedCenter = mapView.projection.toPixels(center, null)
-            val radiusInPixels = mapView.projection.metersToPixels(radiusInMeters.toFloat())
+            val radiusInPixels = mapView.projection.metersToPixels(radiusInMeters)
             canvas.drawCircle(
                 projectedCenter.x.toFloat(),
                 projectedCenter.y.toFloat(),

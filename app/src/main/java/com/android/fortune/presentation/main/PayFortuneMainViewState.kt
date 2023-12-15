@@ -8,17 +8,17 @@ import org.osmdroid.util.GeoPoint
 data class PayFortuneMainViewState(
     val markers: ImmutableList<PayFortuneMarker>,
     val myLocation: GeoPoint?,
-    val obtainingMarker: PayFortuneMarker?,
-    val isObtaining: Boolean,
     val headings: Float,
+    val isShowRequestObtainDialog: Boolean,
+    val currentObtainMarker: PayFortuneMarker?,
 ) {
     companion object {
         fun initial() = PayFortuneMainViewState(
             markers = persistentListOf(),
             myLocation = null,
-            obtainingMarker = null,
-            isObtaining = false,
+            isShowRequestObtainDialog = false,
             headings = 0F,
+            currentObtainMarker = null,
         )
     }
 }

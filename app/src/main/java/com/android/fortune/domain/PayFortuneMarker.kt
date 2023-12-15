@@ -15,6 +15,7 @@ data class PayFortuneMarker(
     enum class Type {
         COIN,
         NORMAL,
+        RANDOM_BOX,
         NONE,
     }
 }

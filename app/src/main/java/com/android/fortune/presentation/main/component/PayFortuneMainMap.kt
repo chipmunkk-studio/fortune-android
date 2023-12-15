@@ -1,9 +1,11 @@
 package com.android.fortune.presentation.main.component
 
-import PayFortuneDirectionPainter
 import android.annotation.SuppressLint
 import android.content.Context
 import android.graphics.Bitmap
+import android.graphics.Color
+import android.graphics.ColorMatrix
+import android.graphics.ColorMatrixColorFilter
 import android.graphics.drawable.BitmapDrawable
 import android.graphics.drawable.Drawable
 import android.view.MotionEvent
@@ -22,12 +24,14 @@ import com.android.fortune.PayFortuneExt
 import com.android.fortune.applySmoothBounceAnimationToMarker
 import com.android.fortune.domain.PayFortuneMarker
 import com.android.fortune.isMarkerInsideCircle
-import com.android.fortune.presentation.main.PayFortuneMapView
 import com.bumptech.glide.Glide
 import com.bumptech.glide.request.target.CustomTarget
 import com.bumptech.glide.request.transition.Transition
 import kotlinx.collections.immutable.ImmutableList
+import org.osmdroid.tileprovider.tilesource.TileSourceFactory
 import org.osmdroid.util.GeoPoint
+import org.osmdroid.views.CustomZoomButtonsController
+import org.osmdroid.views.MapView
 import org.osmdroid.views.overlay.Marker
 import org.osmdroid.views.overlay.Overlay
 import timber.log.Timber
@@ -36,7 +40,7 @@ import timber.log.Timber
 @Composable
 fun PayFortuneMainMap(
     context: Context,
-    mapView: PayFortuneMapView,
+    mapView: MapView,
     headings: Float,
     markers: ImmutableList<PayFortuneMarker>,
     currentLocation: GeoPoint?,
@@ -61,10 +65,20 @@ fun PayFortuneMainMap(
         AndroidView(
             modifier = Modifier.fillMaxSize(),
             factory = { _ ->
-                mapView
+                mapView.apply {
+                    minZoomLevel = PayFortuneExt.minZoomLevel
+                    maxZoomLevel = PayFortuneExt.maxZoomLevel
+                    setTileSource(TileSourceFactory.MAPNIK)
+                    setupNightMode(mapView)
+                    controller.setZoom(PayFortuneExt.initialZoomLevel)
+                    zoomController.setVisibility(CustomZoomButtonsController.Visibility.NEVER)
+                    zoomController.setZoomInEnabled(false)
+                    isFlingEnabled = false
+                    setMultiTouchControls(true)
+                }
             },
         )
-        PayFortuneDirectionPainter(headings = headings)
+        PayFortuneDirectionPainter()
         FortuneMainRippleBackground(
             modifier = Modifier.align(Alignment.Center)
         )
@@ -77,23 +91,10 @@ fun PayFortuneMainMap(
 fun updateMarkersOnMap(
     currentLocation: GeoPoint,
     markers: ImmutableList<PayFortuneMarker>,
-    mapView: PayFortuneMapView,
+    mapView: MapView,
     context: Context,
     onMarkerClick: (PayFortuneMarker) -> Unit
 ) {
-    mapView.setOnTouchListener { _, event ->
-        if (event.action == MotionEvent.ACTION_UP) {
-            if (mapView.zoomLevelDouble != PayFortuneExt.initialZoomLevel) {
-                mapView.controller.animateTo(
-                    currentLocation,
-                    PayFortuneExt.initialZoomLevel,
-                    200L
-                )
-            }
-        }
-        false
-    }
-
     // 이 리스너는 내 위치가 바뀔 때마다 중앙으로 줌인시켜야되기때문에 여기있는거임.
     mapView.setOnTouchListener { _, event ->
         when (event.action) {
@@ -117,11 +118,11 @@ fun updateMarkersOnMap(
             else -> false
         }
     }
+
     currentLocation.let {
         mapView.overlays.clear()
-        mapView.overlays.add(PayFortuneGridOverlay())
         mapView.overlays.add(PayFortuneDisableDoubleTabOverlay())
-        val newCircleOverlay = PayFortuneCircleOverlay(currentLocation, 200.0)
+        val newCircleOverlay = PayFortuneCircleOverlay(currentLocation, 100F)
         val newOverlays = ArrayList<Overlay>()
         for (overlay in mapView.overlays) {
             if (overlay !is PayFortuneCircleOverlay) {
@@ -141,19 +142,17 @@ fun updateMarkersOnMap(
                     ) {
                         val marker = Marker(mapView).apply {
                             id = fortuneMarker.id
+                            title = fortuneMarker.name
                             icon = BitmapDrawable(context.resources, resource)
                             position = fortuneMarker.location
                             setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM)
                         }
 
                         marker.setOnMarkerClickListener { marker, mapView ->
-                            if (isMarkerInsideCircle(
-                                    marker = marker.position,
-                                    circleOverlay = newCircleOverlay,
-                                )
-                            ) {
-                                onMarkerClick(fortuneMarker)
+
+                            if (isMarkerInsideCircle(marker.position, newCircleOverlay)) {
                                 Timber.tag("FortuneTest").d("획득 가능한 마커")
+                                onMarkerClick(fortuneMarker)
                             } else {
                                 Timber.tag("FortuneTest").d("획득 불가능한 마커")
                             }
@@ -173,4 +172,69 @@ fun updateMarkersOnMap(
                 })
         }
     }
+}
+
+fun setupNightMode(mapView: MapView) {
+
+    // 색상 반전 행렬
+    val inverseMatrix = ColorMatrix(
+        floatArrayOf(
+            -1.0f, 0.0f, 0.0f, 0.0f, 255f,
+            0.0f, -1.0f, 0.0f, 0.0f, 255f,
+            0.0f, 0.0f, -1.0f, 0.0f, 255f,
+            0.0f, 0.0f, 0.0f, 1.0f, 0.0f
+        )
+    )
+
+    // 목표 색상 설정
+    val destinationColor = Color.parseColor("#FF2A2A2A")
+    val lr = (255.0f - Color.red(destinationColor)) / 255.0f
+    val lg = (255.0f - Color.green(destinationColor)) / 255.0f
+    val lb = (255.0f - Color.blue(destinationColor)) / 255.0f
+
+    // 회색조 행렬 생성
+    val grayscaleMatrix = ColorMatrix(
+        floatArrayOf(
+            lr, lg, lb, 0F, 0F,
+            lr, lg, lb, 0F, 0F,
+            lr, lg, lb, 0F, 0F,
+            0F, 0F, 0F, 1F, 0F
+        )
+    )
+
+    grayscaleMatrix.preConcat(inverseMatrix)
+
+    // 색조 행렬 생성
+    val drf = Color.red(destinationColor) / 255f
+    val dgf = Color.green(destinationColor) / 255f
+    val dbf = Color.blue(destinationColor) / 255f
+    val tintMatrix = ColorMatrix(
+        floatArrayOf(
+            drf, 0F, 0F, 0F, 0F,
+            0F, dgf, 0F, 0F, 0F,
+            0F, 0F, dbf, 0F, 0F,
+            0F, 0F, 0F, 1F, 0F
+        )
+    )
+
+    tintMatrix.preConcat(grayscaleMatrix)
+
+    // 최종 스케일 행렬 생성 및 적용
+    val lDestination = drf * lr + dgf * lg + dbf * lb
+    val scale = 1f - lDestination
+    val translate = 1 - scale * 0.5f
+    val scaleMatrix = ColorMatrix(
+        floatArrayOf(
+            scale, 0F, 0F, 0F, Color.red(destinationColor) * translate,
+            0F, scale, 0F, 0F, Color.green(destinationColor) * translate,
+            0F, 0F, scale, 0F, Color.blue(destinationColor) * translate,
+            0F, 0F, 0F, 1F, 0F
+        )
+    )
+
+    scaleMatrix.preConcat(tintMatrix)
+
+    // ColorMatrixColorFilter 생성 및 적용
+    val filter = ColorMatrixColorFilter(scaleMatrix)
+    mapView.overlayManager.tilesOverlay.setColorFilter(filter)
 }

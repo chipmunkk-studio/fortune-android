@@ -4,19 +4,28 @@ import com.android.fortune.domain.PayFortuneMarker
 
 
 data class PayFortuneMarkerObtainViewState(
-    val marker: PayFortuneMarker?
+    val targetMarker: PayFortuneMarker?,
+    val isObtaining: Boolean,
+    val isShowScratchDialog: Boolean,
+    val isCloseScratchBox: Boolean,
 ) {
     companion object {
         fun initial() = PayFortuneMarkerObtainViewState(
-            marker = null,
+            targetMarker = null,
+            isObtaining = false,
+            isShowScratchDialog = false,
+            isCloseScratchBox = false,
         )
     }
 }
 
 sealed interface PayFortuneMarkerObtainSingleEvent {
-    data object Loading : PayFortuneMarkerObtainSingleEvent
 
     data class ObtainSuccess(
+        val marker: PayFortuneMarker,
+    ) : PayFortuneMarkerObtainSingleEvent
+
+    data class ShowScratchMarkerDialog(
         val marker: PayFortuneMarker,
     ) : PayFortuneMarkerObtainSingleEvent
 }

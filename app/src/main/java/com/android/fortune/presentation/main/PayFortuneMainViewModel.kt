@@ -25,36 +25,54 @@ class PayFortuneMainViewModel : ViewModel() {
     val singleEvent = _singleEvent.receiveAsFlow()
 
     init {
-        // 현재 위치를 불러옴.
-        val centerGeoPoint = GeoPoint(37.7749, -122.4194)
-        // 마커 리스트.
-        val sampleList = (0..9).map {
-            val id = "${System.currentTimeMillis()}-$it"
-            val angle = 2 * Math.PI / 10 * it // 각 마커의 각도
-            val offsetX = 220 * kotlin.math.cos(angle) / 110540 // 경도 오프셋 (대략적인 계산)
-            val offsetY = 220 * kotlin.math.sin(angle) / 111320 // 위도 오프셋 (대략적인 계산)
+        viewModelScope.launch {
+            // 현재 위치를 불러옴.
+            val centerGeoPoint = GeoPoint(37.39481622873532, 127.1112430592695)
+            // 마커 리스트.
+            val sampleList = (0..9).map {
+                val id = "$it"
+                val angle = 2 * Math.PI / 10 * it // 각 마커의 각도
+                val offsetX = 100 * kotlin.math.cos(angle) / 110540 // 경도 오프셋 (대략적인 계산)
+                val offsetY = 100 * kotlin.math.sin(angle) / 111320 // 위도 오프셋 (대략적인 계산)
 
-            val markerPoint =
-                GeoPoint(centerGeoPoint.latitude + offsetY, centerGeoPoint.longitude + offsetX)
+                val markerPoint =
+                    GeoPoint(centerGeoPoint.latitude + offsetY, centerGeoPoint.longitude + offsetX)
 
-            PayFortuneMarker(
-                id = id,
-                name = if (it / 2 == 0) "코인" else "마커",
-                location = markerPoint,
-                imageUrl = "https://picsum.photos/128/128/?random",
-                type = if (it / 2 == 0) PayFortuneMarker.Type.COIN else PayFortuneMarker.Type.NORMAL
-            )
-        }.toImmutableList()
+                PayFortuneMarker(
+                    id = id,
+                    name = when (it) {
+                        0 -> PayFortuneMarker.Type.COIN.name
+                        1 -> PayFortuneMarker.Type.NORMAL.name
+                        2 -> PayFortuneMarker.Type.RANDOM_BOX.name
+                        3 -> PayFortuneMarker.Type.COIN.name
+                        4 -> PayFortuneMarker.Type.NORMAL.name
+                        5 -> PayFortuneMarker.Type.RANDOM_BOX.name
+                        else -> PayFortuneMarker.Type.RANDOM_BOX.name
+                    },
+                    location = markerPoint,
+                    imageUrl = "https://hcpyrleocxaejkqqibik.supabase.co/storage/v1/object/public/ingredients/green_clover.webp?t=2023-12-15T03%3A36%3A26.315Z",
+                    type = when (it) {
+                        0 -> PayFortuneMarker.Type.COIN
+                        1 -> PayFortuneMarker.Type.NORMAL
+                        2 -> PayFortuneMarker.Type.RANDOM_BOX
+                        3 -> PayFortuneMarker.Type.COIN
+                        4 -> PayFortuneMarker.Type.NORMAL
+                        5 -> PayFortuneMarker.Type.RANDOM_BOX
+                        else -> PayFortuneMarker.Type.RANDOM_BOX
+                    },
+                )
+            }.toImmutableList()
 
-        // 내 위치를 보냄.
-        _singleEvent.trySend(PayFortuneSingleEvent.ChangeMyLocation(centerGeoPoint))
-        _viewState.update { prevState ->
-            prevState.copy(
-                myLocation = centerGeoPoint,
-                markers = sampleList
-            )
+            // 내 위치를 보냄.
+            _singleEvent.trySend(PayFortuneSingleEvent.ChangeMyLocation(centerGeoPoint))
+            _viewState.update { prevState ->
+                prevState.copy(
+                    myLocation = centerGeoPoint,
+                    markers = sampleList
+                )
+            }
+            startLocationUpdates(centerGeoPoint)
         }
-        startLocationUpdates(centerGeoPoint)
     }
 
     private fun startLocationUpdates(centerGeoPoint: GeoPoint) {
@@ -74,10 +92,26 @@ class PayFortuneMainViewModel : ViewModel() {
 
                     PayFortuneMarker(
                         id = id,
-                        name = if (it / 2 == 0) "코인" else "마커",
+                        name = when (it) {
+                            0 -> PayFortuneMarker.Type.COIN.name
+                            1 -> PayFortuneMarker.Type.NORMAL.name
+                            2 -> PayFortuneMarker.Type.RANDOM_BOX.name
+                            3 -> PayFortuneMarker.Type.COIN.name
+                            4 -> PayFortuneMarker.Type.NORMAL.name
+                            5 -> PayFortuneMarker.Type.RANDOM_BOX.name
+                            else -> PayFortuneMarker.Type.RANDOM_BOX.name
+                        },
                         location = markerPoint,
                         imageUrl = "https://picsum.photos/128/128/?random",
-                        type = if (it / 2 == 0) PayFortuneMarker.Type.COIN else PayFortuneMarker.Type.NORMAL
+                        type = when (it) {
+                            0 -> PayFortuneMarker.Type.COIN
+                            1 -> PayFortuneMarker.Type.NORMAL
+                            2 -> PayFortuneMarker.Type.RANDOM_BOX
+                            3 -> PayFortuneMarker.Type.COIN
+                            4 -> PayFortuneMarker.Type.NORMAL
+                            5 -> PayFortuneMarker.Type.RANDOM_BOX
+                            else -> PayFortuneMarker.Type.RANDOM_BOX
+                        },
                     )
                 }.toImmutableList()
 
@@ -97,26 +131,22 @@ class PayFortuneMainViewModel : ViewModel() {
     fun onMarkerClick(marker: PayFortuneMarker) {
         _viewState.update { prevState ->
             prevState.copy(
-                isObtaining = true,
-                obtainingMarker = marker,
+                isShowRequestObtainDialog = true,
+                currentObtainMarker = marker,
             )
         }
-        // 현재 viewState의 마커 리스트를 가져옴
-        val currentMarkers = _viewState.value.markers
-
-        // 클릭된 마커를 제외한 나머지 마커들을 필터링
-        val updatedMarkers = currentMarkers.filter { it != marker }.toImmutableList()
-        _singleEvent.trySend(PayFortuneSingleEvent.NavigateProcessObtain(marker))
-
     }
 
-    fun obtainSuccess(marker: PayFortuneMarker) {
+    fun startObtainProcess(marker: PayFortuneMarker) {
         _viewState.update { prevState ->
             prevState.copy(
-                isObtaining = false,
-                obtainingMarker = null,
+                isShowRequestObtainDialog = false,
             )
         }
+        _singleEvent.trySend(PayFortuneSingleEvent.NavigateProcessObtain(marker))
+    }
+
+    fun obtainSuccess(marker: PayFortuneMarker) = viewModelScope.launch {
         _singleEvent.trySend(PayFortuneSingleEvent.ObtainMarkerAction(marker))
     }
 
